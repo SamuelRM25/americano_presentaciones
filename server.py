@@ -67,7 +67,7 @@ GRADES = {
     "cuarto_madurez": {"label": "Cuarto Bachillerato por Madurez", "subject": "TIC", "ready": True},
     "cuarto_perito": {"label": "Cuarto Perito Contador", "subject": "Computación I", "ready": False},
     "quinto_perito": {"label": "Quinto Perito Contador", "subject": "Computación II", "ready": False},
-    "sexto_perito": {"label": "Sexto Perito Contador", "subject": "Computación III", "ready": False},
+    "sexto_pc": {"label": "Sexto Perito Contador", "subject": "Computación III (Funciones avanzadas de Excel)", "ready": True},
     "cuarto_secretariado": {"label": "Cuarto Secretariado", "subject": "Computación I", "ready": False},
     "quinto_bachillerato": {"label": "Quinto Bachillerato en Computación", "subject": "Computación II", "ready": False},
 }
