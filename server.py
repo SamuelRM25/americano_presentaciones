@@ -2,14 +2,22 @@ import os
 import json
 import hashlib
 import secrets
+import io
 import urllib.parse
 import urllib.request
 from datetime import datetime
 from pathlib import Path
 from functools import wraps
 
-from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_from_directory
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_from_directory, Response
 from flask_cors import CORS
+
+try:
+    import qrcode
+    from qrcode.constants import ERROR_CORRECT_M
+    QRCODE_AVAILABLE = True
+except ImportError:
+    QRCODE_AVAILABLE = False
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
@@ -21,6 +29,35 @@ DATA_DIR.mkdir(exist_ok=True)
 
 app = Flask(__name__, template_folder=str(TEMPLATES_DIR), static_folder=str(STATIC_DIR))
 CORS(app)
+
+
+def build_url(path):
+    """Construye una URL absoluta usando la IP estática configurada."""
+    try:
+        cfg = load_config()
+        lan_ip = cfg.get("server", {}).get("lan_ip", "192.168.1.100")
+        return f"http://{lan_ip}{path}"
+    except Exception:
+        return f"http://192.168.1.100{path}"
+
+
+def make_qr_png(url, size=10, border=2):
+    """Genera un PNG del QR en memoria."""
+    if not QRCODE_AVAILABLE:
+        return None
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=ERROR_CORRECT_M,
+        box_size=size,
+        border=border,
+    )
+    qr.add_data(url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return buf
 
 
 def load_config():
@@ -86,6 +123,61 @@ def grade_view(grade_id):
     if not GRADES[grade_id]["ready"]:
         return render_template("coming_soon.html", grade=GRADES[grade_id])
     return render_template(f"{grade_id}.html", grade=GRADES[grade_id])
+
+
+@app.route("/qr/<grade_id>.png")
+@app.route("/qr/<grade_id>")
+def qr_grade(grade_id):
+    """Devuelve un QR PNG con la URL del grado. Ideal para mostrar/printar."""
+    if not QRCODE_AVAILABLE:
+        return "Librería qrcode no instalada. Ejecuta: pip install 'qrcode[pil]'", 500
+    if grade_id == "all":
+        url = build_url("/")
+    else:
+        if grade_id not in GRADES:
+            return "Grado no encontrado", 404
+        url = build_url(f"/grado/{grade_id}")
+    buf = make_qr_png(url, size=10, border=2)
+    return Response(buf.getvalue(), mimetype="image/png")
+
+
+@app.route("/qr-cards")
+@app.route("/qr-cards.html")
+def qr_cards():
+    """Página imprimible con todos los QRs de los grados disponibles."""
+    if not QRCODE_AVAILABLE:
+        return "Librería qrcode no instalada. Ejecuta: pip install 'qrcode[pil]'", 500
+    return render_template("qr_cards.html", grades=GRADES, build_url=build_url, school=load_config()["school"])
+
+
+@app.route("/qr/grade/<grade_id>.png")
+def qr_grade_static(grade_id):
+    """Alias para QR con extensión .png (mejor mime)."""
+    return qr_grade(grade_id)
+
+
+@app.route("/api/links")
+def api_links():
+    """Devuelve un JSON con todos los links disponibles. Útil para el script de terminal."""
+    cfg = load_config()
+    base = cfg.get("server", {}).get("lan_ip", "192.168.1.100")
+    out = {
+        "server_ip": base,
+        "server_port": cfg.get("server", {}).get("port", 8080),
+        "admin_url": f"http://{base}/admin",
+        "qr_cards_url": f"http://{base}/qr-cards",
+        "qr_cards_print": f"http://{base}/qr-cards?print=1",
+        "grades": {},
+    }
+    for gid, g in GRADES.items():
+        out["grades"][gid] = {
+            "label": g["label"],
+            "subject": g["subject"],
+            "ready": g["ready"],
+            "url": f"http://{base}/grado/{gid}" if g["ready"] else None,
+            "qr_url": f"http://{base}/qr/{gid}.png" if g["ready"] else None,
+        }
+    return jsonify(out)
 
 
 @app.route("/admin")

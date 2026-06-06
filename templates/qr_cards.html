@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR · {{ school.name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+  <style>
+    body {
+      background: #f5f5fa;
+      color: #1a1a3e;
+      padding: 1.5rem;
+    }
+    body::before { display: none; }
+    .page-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #7c3aed;
+    }
+    .page-header h1 {
+      font-size: 1.6rem;
+      color: #5b21b6;
+      margin-bottom: 0.3rem;
+    }
+    .page-header p {
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+    .page-header .actions {
+      margin-top: 0.7rem;
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .page-header .btn {
+      background: #7c3aed;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+    .page-header .btn:hover { background: #5b21b6; }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .qr-card {
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .qr-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.15);
+      border-color: #7c3aed;
+    }
+    .qr-card .icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .qr-card h3 {
+      font-size: 1.1rem;
+      color: #1a1a3e;
+      margin-bottom: 0.3rem;
+    }
+    .qr-card .subject {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-bottom: 0.8rem;
+    }
+    .qr-card .qr-img {
+      display: block;
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 0.8rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: white;
+    }
+    .qr-card .url {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: #5b21b6;
+      word-break: break-all;
+      background: #f5f3ff;
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      margin-top: 0.3rem;
+    }
+    .qr-card .copy-btn {
+      margin-top: 0.6rem;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+      padding: 0.4rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .qr-card .copy-btn:hover {
+      background: #7c3aed;
+      color: white;
+      border-color: #7c3aed;
+    }
+    .qr-card .copy-btn.copied {
+      background: #10b981;
+      color: white;
+      border-color: #10b981;
+    }
+    .admin-card { background: linear-gradient(135deg, #1a1a3e 0%, #5b21b6 100%); color: white; border-color: #7c3aed; }
+    .admin-card h3 { color: white; }
+    .admin-card .subject { color: #cbd5e1; }
+    .admin-card .url { background: rgba(255,255,255,0.1); color: #c4b5fd; }
+    .admin-card .copy-btn { background: rgba(255,255,255,0.15); color: white; border-color: rgba(255,255,255,0.3); }
+    .admin-card .copy-btn:hover { background: rgba(255,255,255,0.3); }
+    .empty-notice {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 2rem;
+      color: #94a3b8;
+      font-size: 0.95rem;
+    }
+    @media print {
+      body { background: white; padding: 0.5cm; }
+      .page-header .actions, .copy-btn { display: none !important; }
+      .page-header { border-bottom: 2px solid #000; }
+      .qr-card {
+        page-break-inside: avoid;
+        box-shadow: none;
+        border: 2px solid #000;
+      }
+      .qr-card .qr-img { border: 1px solid #000; }
+      .cards { gap: 0.8rem; }
+      h1, h3, p, .url, .subject { color: #000 !important; background: transparent !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <h1>🎓 {{ school.name }} — Códigos QR de acceso</h1>
+    <p>Los estudiantes escanean el QR con la cámara de su celular y se abre el enlace directamente.</p>
+    <div class="actions">
+      <button class="btn" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+      <a class="btn" href="/qr-cards?print=1" target="_blank">🖨️ Vista de impresión</a>
+    </div>
+  </header>
+
+  <div class="cards">
+    {% set admin_url = build_url('/admin') %}
+    <div class="qr-card admin-card">
+      <div class="icon">👨‍🏫</div>
+      <h3>Panel del Profesor</h3>
+      <div class="subject">Acceso solo para el docente</div>
+      <img class="qr-img" src="/qr/all.png" alt="QR Admin" onerror="this.style.display='none'">
+      <div class="url">{{ admin_url }}</div>
+      <button class="copy-btn" data-url="{{ admin_url }}">📋 Copiar enlace</button>
+    </div>
+
+    {% for gid, g in grades.items() %}
+      {% if g.ready %}
+        {% set url = build_url('/grado/' + gid) %}
+        <div class="qr-card">
+          <div class="icon">
+            {% if g.subject.startswith('Mecanografía') %}⌨️
+            {% elif 'Contador' in g.label %}🧮
+            {% elif 'Secretariado' in g.label %}📋
+            {% elif 'Bachillerato en Computación' in g.label %}💻
+            {% elif 'Madurez' in g.label %}🎓
+            {% else %}📚{% endif %}
+          </div>
+          <h3>{{ g.label }}</h3>
+          <div class="subject">{{ g.subject }}</div>
+          <img class="qr-img" src="/qr/{{ gid }}.png" alt="QR {{ g.label }}">
+          <div class="url">{{ url }}</div>
+          <button class="copy-btn" data-url="{{ url }}">📋 Copiar enlace</button>
+        </div>
+      {% endif %}
+    {% endfor %}
+
+    {% if not grades.values()|selectattr('ready')|list %}
+      <div class="empty-notice">
+        <p>Aún no hay grados disponibles.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <script>
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const url = btn.getAttribute('data-url');
+        try {
+          await navigator.clipboard.writeText(url);
+        } catch {
+          const ta = document.createElement('textarea');
+          ta.value = url;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+        }
+        const orig = btn.textContent;
+        btn.textContent = '✅ ¡Copiado!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = orig;
+          btn.classList.remove('copied');
+        }, 1800);
+      });
+    });
+
+    if (window.location.search.includes('print=1')) {
+      setTimeout(() => window.print(), 400);
+    }
+  </script>
+</body>
+</html>
