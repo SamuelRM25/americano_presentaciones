@@ -86,9 +86,22 @@ python server.py
 
 ### 3. Acceder
 
-- **Estudiantes:** http://localhost:5000
-- **Panel del profesor:** http://localhost:5000/admin
-  - Contraseña por defecto: `Samprs258`
+Tienes dos formas de acceder, según tu entorno:
+
+**A) Acceso local** (en la misma Mac donde corre el servidor):
+- Estudiantes: http://localhost:8080
+- Admin: http://localhost:8080/admin
+
+**B) Acceso LAN** (desde otras computadoras en la red):
+- Estudiantes: `http://192.168.1.100/grado/<id_grado>` o `http://192.168.1.100/grados/<id_grado>` (ambos funcionan)
+- Admin: `http://192.168.1.100/admin`
+- Sin necesidad de especificar puerto (XAMPP Apache hace de proxy en puerto 80)
+- Contraseña admin: `Samprs258`
+
+**Grados disponibles:**
+- `cuarto_madurez` — Cuarto Bachillerato por Madurez (TIC)
+- `sexto_pc` — Sexto Perito Contador (Excel avanzado)
+- `segundo_basico` — Segundo Básico (TAC/Mecanografía)
 
 ---
 
@@ -147,9 +160,50 @@ Edita `config.json` y actualiza `server.lan_ip` con tu IP fija:
 - Verifica con: `curl http://192.168.1.100:8080/api/health`
 
 ### Acceso desde los estudiantes
-- En el navegador del estudiante: `http://192.168.1.100:8080`
+- En el navegador del estudiante: `http://192.168.1.100/grado/<id_grado>`
+- Funciona con o sin "s" en "grado/grados"
 - (El estudiante debe estar conectado a la **misma red Wi-Fi/LAN** que el profesor)
 - Si usas Windows como servidor, ajusta la URL con la IP que asignaste.
+
+### 🌐 Configurar proxy inverso (opcional, recomendado)
+
+Si tienes **XAMPP, MAMP, Apache u otro servidor web en el puerto 80**, puedes configurarlo como proxy inverso a Flask (puerto 8080) para acceder **sin especificar el puerto 8080** en las URLs.
+
+**En XAMPP/MAMP Apache**, agrega esto a `httpd.conf` (con `mod_proxy` y `mod_rewrite` habilitados):
+
+```apache
+<IfModule proxy_module>
+    RewriteEngine On
+    RewriteRule ^/grados/(.*)$ /grado/$1 [PT,L]
+
+    ProxyPass /grado/ http://127.0.0.1:8080/grado/
+    ProxyPassReverse /grado/ http://127.0.0.1:8080/grado/
+    ProxyPass /admin http://127.0.0.1:8080/admin
+    ProxyPassReverse /admin http://127.0.0.1:8080/admin
+    ProxyPass /api/ http://127.0.0.1:8080/api/
+    ProxyPassReverse /api/ http://127.0.0.1:8080/api/
+    ProxyPass /static/ http://127.0.0.1:8080/static/
+    ProxyPassReverse /static/ http://127.0.0.1:8080/static/
+
+    <Location /grado/>
+        Require all granted
+    </Location>
+    <Location /admin>
+        Require all granted
+    </Location>
+    <Location /api/>
+        Require all granted
+    </Location>
+    <Location /static/>
+        Require all granted
+    </Location>
+</IfModule>
+```
+
+Reinicia Apache y tendrás:
+- `http://192.168.1.100/grado/segundo_basico` ← funciona (con o sin "s")
+- `http://192.168.1.100/admin` ← funciona
+- `http://192.168.1.100/dashboard/` ← XAMPP sigue funcionando
 
 ### ⚠️ Hotspots de celular (NO recomendado para clases)
 Los hotspots de iPhone/Android tienen **aislación de clientes**: los dispositivos conectados no se ven entre sí. Para una clase con varios estudiantes, usa un **router Wi-Fi real**.

@@ -79,6 +79,7 @@ def index():
 
 
 @app.route("/grado/<grade_id>")
+@app.route("/grados/<grade_id>")
 def grade_view(grade_id):
     if grade_id not in GRADES:
         return "Grado no encontrado", 404
