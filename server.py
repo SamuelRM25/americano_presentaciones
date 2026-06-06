@@ -62,7 +62,7 @@ def admin_required(f):
 
 GRADES = {
     "primero_basico": {"label": "Primero Básico", "subject": "TAC (Mecanografía)", "ready": False},
-    "segundo_basico": {"label": "Segundo Básico", "subject": "TAC (Mecanografía)", "ready": False},
+    "segundo_basico": {"label": "Segundo Básico", "subject": "TAC (Mecanografía)", "ready": True},
     "tercero_basico": {"label": "Tercero Básico", "subject": "TAC", "ready": False},
     "cuarto_madurez": {"label": "Cuarto Bachillerato por Madurez", "subject": "TIC", "ready": True},
     "cuarto_perito": {"label": "Cuarto Perito Contador", "subject": "Computación I", "ready": False},

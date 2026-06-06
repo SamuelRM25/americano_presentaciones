@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ grade.label }} · {{ grade.subject }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/presentation.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+</head>
+<body>
+  <div class="presentation" id="presentation">
+    <header class="topbar" id="topbar"></header>
+
+    <main class="slides-container" id="main">
+      <section class="class-menu" id="class-menu"></section>
+      <div id="class-content" style="display:none"></div>
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/student.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/progress.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/keywords.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/exercises.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/exam.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/segundo_basico_data.js') }}"></script>
+  <script>
+    const GRADE = {{ grade | tojson }};
+    const COURSE = COURSE_DATA;
+
+    async function init() {
+      const student = await Student.ensure(COURSE.grade);
+      App.initTopbar(GRADE, student);
+      await Progress.loadFromServer(COURSE.grade);
+      renderClassMenu();
+    }
+
+    function renderClassMenu() {
+      const menu = document.getElementById('class-menu');
+      menu.innerHTML = COURSE.classes.map((c, i) => {
+        const state = Progress.getClassState(COURSE.grade, c.id);
+        const completed = state.exam_taken;
+        const prevCompleted = i === 0 || Progress.isClassCompleted(COURSE.grade, COURSE.classes[i - 1].id);
+        const locked = !prevCompleted && !completed;
+        const pct = Progress.computeClassPercent(COURSE.grade, c.id, {
+          slides: c.info.length,
+          keywords: c.keywords.length,
+          tasks: c.tasks.length,
+          exercises: c.exercises.length,
+        });
+        return `
+          <div class="class-card ${completed ? 'completed' : ''} ${locked ? 'locked' : ''}" data-class-id="${c.id}" style="animation-delay:${i * 0.06}s">
+            <span class="class-num">${String(c.num).padStart(2, '0')}</span>
+            <div class="icon">${c.icon}</div>
+            <h3>Clase ${c.num}: ${escapeHTML(c.title)}</h3>
+            <p>${escapeHTML(c.tagline)}</p>
+            <div class="progress">
+              <div class="progress-label">
+                <span>${completed ? '✅ Completada' : locked ? '🔒 Bloqueada' : 'En progreso'}</span>
+                <span>${pct}%</span>
+              </div>
+              <div class="progress-bar"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      menu.querySelectorAll('.class-card').forEach(card => {
+        card.addEventListener('click', () => {
+          if (card.classList.contains('locked')) {
+            Toast.show('Debes completar la clase anterior primero', 'warn');
+            return;
+          }
+          const id = card.getAttribute('data-class-id');
+          Progress.markVisited(COURSE.grade, id, 'overview');
+          Progress.syncToServer(COURSE.grade);
+          renderClass(id);
+        });
+      });
+    }
+
+    function renderClass(classId) {
+      const c = COURSE.classes.find(x => x.id === classId);
+      if (!c) return;
+      const main = document.getElementById('main');
+      const menu = document.getElementById('class-menu');
+      const content = document.getElementById('class-content');
+      menu.style.display = 'none';
+      content.style.display = 'block';
+
+      const tabs = [
+        { id: 'info', label: 'Información', count: c.info.length },
+        { id: 'kw', label: 'Palabras clave', count: c.keywords.length },
+        { id: 'ex', label: 'Ejercicios', count: c.exercises.length },
+        { id: 'tasks', label: 'Tareas', count: c.tasks.length },
+        { id: 'exam', label: 'Mini-examen', count: c.exam.questions.length },
+      ];
+      if (c.finalExam) tabs.push({ id: 'final', label: 'Examen final', count: c.finalExam.questions.length, gold: true });
+
+      content.innerHTML = `
+        <div class="slide-header">
+          <span class="crumb" id="back">← Volver al menú de clases</span>
+          <span class="badge badge-primary">Clase ${c.num} / ${COURSE.classes.length}</span>
+          <span class="badge badge-info">${c.icon} ${escapeHTML(c.title)}</span>
+        </div>
+        <div class="slide" style="padding:0;border:none;background:transparent;box-shadow:none">
+          <div class="slide-tabs" id="tabs">
+            ${tabs.map((t, i) => `
+              <button class="slide-tab ${i === 0 ? 'active' : ''}" data-tab="${t.id}">
+                ${t.gold ? '🏆 ' : ''}${t.label} <span class="count">${t.count}</span>
+              </button>
+            `).join('')}
+          </div>
+
+          <div class="slide-content active" data-tab-content="info">
+            <div class="slide" style="animation:none">
+              <h2>${c.icon} Clase ${c.num}: ${escapeHTML(c.title)}</h2>
+              <p style="color:var(--text-soft);font-size:1.05rem;margin-bottom:1.5rem">${escapeHTML(c.tagline)}</p>
+              ${c.info.map(s => s.html).join('<hr style="border:none;border-top:1px solid var(--border);margin:2rem 0">')}
+            </div>
+          </div>
+
+          <div class="slide-content" data-tab-content="kw">
+            <div class="slide" style="animation:none">
+              <h2>🔑 Palabras clave para investigar</h2>
+              <p>Haz clic en cada término, investiga y escribe la definición con tus propias palabras. Se guarda automáticamente.</p>
+              <div class="slide-info">
+                <span class="icon">💡</span>
+                <p>No copies de internet. <strong>Reformula</strong> lo aprendido con tu propio estilo. Esto te ayuda a recordar mejor.</p>
+              </div>
+              <div id="kw-container">
+                ${c.keywords.map(k => Keywords.renderKeywordCard(COURSE.grade, c.id, k.term, k.hint)).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div class="slide-content" data-tab-content="ex">
+            <div class="slide" style="animation:none">
+              <h2>✏️ Ejercicios interactivos</h2>
+              <p>Responde cada ejercicio y presiona <strong>Verificar</strong>. Si fallas, puedes intentarlo de nuevo.</p>
+              <div id="ex-container">
+                ${c.exercises.map(ex => {
+                  if (ex.type === 'tf') return Exercises.renderTrueFalse(ex, COURSE.grade, c.id);
+                  if (ex.type === 'fill') return Exercises.renderFillBlank(ex, COURSE.grade, c.id);
+                  return Exercises.renderMultipleChoice(ex, COURSE.grade, c.id);
+                }).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div class="slide-content" data-tab-content="tasks">
+            <div class="slide" style="animation:none">
+              <h2>📝 Tareas para entregar</h2>
+              <p>Estas tareas refuerzan lo aprendido. Márcalas como completadas cuando las hayas entregado.</p>
+              <div id="tasks-container">
+                ${c.tasks.map(t => Tasks.renderTask(COURSE.grade, c.id, t)).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div class="slide-content" data-tab-content="exam">
+            <div class="slide" style="animation:none">
+              <h2>🎯 Mini-examen de la clase</h2>
+              <div id="exam-container">
+                ${Exam.renderMiniExam(COURSE.grade, c.id, c.exam.questions, { examId: c.exam.id, title: c.exam.title, description: c.exam.description })}
+              </div>
+            </div>
+          </div>
+
+          ${c.finalExam ? `
+            <div class="slide-content" data-tab-content="final">
+              <div class="slide" style="animation:none">
+                <h2>🏆 Examen Final</h2>
+                <div id="final-container">
+                  ${Exam.renderMiniExam(COURSE.grade, c.id, c.finalExam.questions, { examId: c.finalExam.id, title: c.finalExam.title, description: c.finalExam.description, passMark: c.finalExam.passMark })}
+                </div>
+              </div>
+            </div>
+          ` : ''}
+
+          <div class="slide-actions">
+            <span class="slide-progress">Clase ${c.num} de ${COURSE.classes.length} · ${c.info.length} pantallas informativas</span>
+            <div class="slide-nav">
+              <button class="btn btn-secondary" id="prev-class">← Clase anterior</button>
+              <button class="btn btn-primary" id="next-class">Siguiente clase →</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const idx = COURSE.classes.findIndex(x => x.id === classId);
+      document.getElementById('back').addEventListener('click', () => {
+        content.style.display = 'none';
+        menu.style.display = 'grid';
+        renderClassMenu();
+        Progress.syncToServer(COURSE.grade);
+      });
+      const prevBtn = document.getElementById('prev-class');
+      const nextBtn = document.getElementById('next-class');
+      if (idx === 0) { prevBtn.disabled = true; prevBtn.setAttribute('aria-disabled', 'true'); }
+      if (idx === COURSE.classes.length - 1) { nextBtn.disabled = true; nextBtn.setAttribute('aria-disabled', 'true'); nextBtn.textContent = 'Última clase'; }
+      prevBtn.addEventListener('click', () => idx > 0 && renderClass(COURSE.classes[idx - 1].id));
+      nextBtn.addEventListener('click', () => idx < COURSE.classes.length - 1 && renderClass(COURSE.classes[idx + 1].id));
+
+      content.querySelectorAll('.slide-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          content.querySelectorAll('.slide-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          content.querySelectorAll('.slide-content').forEach(s => s.classList.remove('active'));
+          const target = tab.getAttribute('data-tab');
+          const panel = content.querySelector(`[data-tab-content="${target}"]`);
+          if (panel) panel.classList.add('active');
+          if (target === 'info') Progress.markVisited(COURSE.grade, c.id, 'info_panel');
+          if (target === 'kw') Progress.markVisited(COURSE.grade, c.id, 'kw_panel');
+          if (target === 'ex') Progress.markVisited(COURSE.grade, c.id, 'ex_panel');
+          if (target === 'tasks') Progress.markVisited(COURSE.grade, c.id, 'tasks_panel');
+          if (target === 'exam') Progress.markVisited(COURSE.grade, c.id, 'exam_panel');
+          Progress.syncToServer(COURSE.grade);
+        });
+      });
+
+      Keywords.attachHandlers(content.querySelector('#kw-container'), COURSE.grade, c.id);
+      Exercises.attachHandlers(content.querySelector('#ex-container'), COURSE.grade, c.id, c.exercises);
+      Tasks.attachHandlers(content.querySelector('#tasks-container'), COURSE.grade, c.id);
+      Exam.attachMiniExam(content.querySelector('#exam-container'), COURSE.grade, c.id, c.exam.questions, { examId: c.exam.id, title: c.exam.title, description: c.exam.description });
+      if (c.finalExam) {
+        Exam.attachMiniExam(content.querySelector('#final-container'), COURSE.grade, c.id, c.finalExam.questions, { examId: c.finalExam.id, title: c.finalExam.title, description: c.finalExam.description, passMark: c.finalExam.passMark });
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
