@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Próximamente · {{ grade.label }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+</head>
+<body>
+  <div style="min-height:100vh;display:grid;place-items:center;padding:2rem">
+    <div class="card" style="max-width:520px;text-align:center;padding:3rem">
+      <div style="font-size:5rem;margin-bottom:0.5rem;animation:float 3s ease-in-out infinite">🚧</div>
+      <h1 style="font-size:1.8rem;margin-bottom:0.5rem;background:var(--grad-primary);-webkit-background-clip:text;background-clip:text;color:transparent">{{ grade.label }}</h1>
+      <p style="color:var(--text-soft);margin-bottom:0.3rem">{{ grade.subject }}</p>
+      <p style="color:var(--text-mute);margin-bottom:1.5rem">Este grado está en preparación. Pronto estará disponible con todo el contenido interactivo.</p>
+      <a href="/" class="btn btn-primary">← Volver al inicio</a>
+    </div>
+  </div>
+</body>
+</html>

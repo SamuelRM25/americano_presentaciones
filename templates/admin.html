@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel del Profesor · Americano</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+</head>
+<body>
+  <div class="admin-shell">
+    <header class="admin-header">
+      <h1><span class="icon">👨‍🏫</span> Panel del Profesor</h1>
+      <span class="badge badge-primary" id="server-info">—</span>
+      <div class="right">
+        <a href="/" class="btn btn-ghost btn-sm">🏠 Inicio</a>
+        <button class="btn btn-ghost btn-sm" id="refresh-btn">↻ Actualizar</button>
+        <button class="btn btn-danger btn-sm" id="logout-btn">Cerrar sesión</button>
+      </div>
+    </header>
+
+    <main class="admin-main">
+      <section class="stats-grid" id="stats"></section>
+
+      <section class="admin-panel">
+        <h2>📚 Grados <span class="count" id="grade-count"></span></h2>
+        <div class="grade-selector" id="grade-selector"></div>
+        <div id="students-area"></div>
+      </section>
+
+      <section class="admin-panel">
+        <h2>⚙️ Configuración <span class="count">Google Forms · Contraseña · Servidor</span></h2>
+        <form class="config-form" id="config-form">
+          <div class="field">
+            <label>Contraseña del panel</label>
+            <input type="text" name="password" id="cfg-password">
+            <div class="help">Cámbiala y guarda. Necesitarás usarla para volver a entrar.</div>
+          </div>
+          <div class="field">
+            <label>URL del Google Form (formResponse)</label>
+            <input type="text" name="form_url" id="cfg-form-url" placeholder="https://docs.google.com/forms/d/e/.../formResponse">
+            <div class="help">Pega aquí la URL de envío de tu Google Form. Déjalo vacío para desactivar el respaldo.</div>
+          </div>
+          <div class="field">
+            <label>Habilitar respaldo a Google Forms</label>
+            <select name="enabled" id="cfg-enabled">
+              <option value="false">No</option>
+              <option value="true">Sí</option>
+            </select>
+          </div>
+          <details style="margin-bottom:1rem">
+            <summary style="cursor:pointer;color:var(--text-soft);font-weight:600;padding:0.5rem 0">🆔 IDs de campos del form (entry.XXXXXXX)</summary>
+            <div style="padding:1rem 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.6rem">
+              <div><label>nombre</label><input type="text" name="f_nombre" id="cfg-f-nombre" placeholder="entry.123456"></div>
+              <div><label>apellido</label><input type="text" name="f_apellido" id="cfg-f-apellido"></div>
+              <div><label>grado</label><input type="text" name="f_grado" id="cfg-f-grado"></div>
+              <div><label>clase</label><input type="text" name="f_clase" id="cfg-f-clase"></div>
+              <div><label>tipo</label><input type="text" name="f_tipo" id="cfg-f-tipo"></div>
+              <div><label>contenido</label><input type="text" name="f_contenido" id="cfg-f-contenido"></div>
+              <div><label>calificacion</label><input type="text" name="f_calificacion" id="cfg-f-calificacion"></div>
+            </div>
+          </details>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+            <button type="submit" class="btn btn-primary">💾 Guardar configuración</button>
+            <button type="button" class="btn btn-secondary" id="export-btn">📤 Exportar todo a Google Forms</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const GRADES = {{ grades | tojson }};
+  </script>
+  <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+</body>
+</html>

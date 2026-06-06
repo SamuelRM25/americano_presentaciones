@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acceso Profesor · Americano</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+  <div class="login-shell">
+    <div class="login-card">
+      <div class="icon">🔐</div>
+      <h1>Acceso Profesor</h1>
+      <p>Ingresa la contraseña para ver el panel de administración.</p>
+      <form id="login-form">
+        <div class="field" style="margin-bottom:1rem;text-align:left">
+          <label>Contraseña</label>
+          <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg" style="width:100%">Ingresar</button>
+        <div id="login-error" style="color:var(--danger);font-size:0.88rem;margin-top:0.7rem;display:none"></div>
+      </form>
+      <a href="/" class="btn btn-ghost btn-sm" style="margin-top:1.2rem">← Volver al inicio</a>
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+  <script>
+    const form = document.getElementById('login-form');
+    const err = document.getElementById('login-error');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('login-password').value;
+      const submit = form.querySelector('button');
+      submit.disabled = true;
+      const res = await API.adminLogin(password);
+      if (res.ok) {
+        location.href = '/admin';
+      } else {
+        err.textContent = res.error || 'Error de autenticación';
+        err.style.display = 'block';
+        form.style.animation = 'shake 0.4s';
+        setTimeout(() => form.style.animation = '', 400);
+        submit.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

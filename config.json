@@ -1,0 +1,29 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8080,
+    "lan_ip": "192.168.1.100",
+    "debug": false
+  },
+  "admin": {
+    "password": "Samprs258",
+    "session_secret": "americano-secret-change-me-in-production"
+  },
+  "google_forms": {
+    "enabled": false,
+    "form_url": "",
+    "fields": {
+      "nombre": "",
+      "apellido": "",
+      "grado": "",
+      "clase": "",
+      "tipo": "",
+      "contenido": "",
+      "calificacion": ""
+    }
+  },
+  "school": {
+    "name": "Americano",
+    "teacher": "Profesor Samuel Ramírez"
+  }
+}

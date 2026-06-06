@@ -1,0 +1,32 @@
+@media (max-width: 768px) {
+  .topbar { padding: 0.7rem 1rem; gap: 0.6rem; }
+  .topbar .meta { gap: 0.6rem; font-size: 0.82rem; }
+  .slides-container { padding: 1rem 0.8rem 5rem; }
+  .slide { padding: 1.6rem 1.2rem; border-radius: var(--radius-lg); }
+  .slide h2 { font-size: 1.5rem; }
+  .slide h3 { font-size: 1.2rem; }
+  .class-menu { grid-template-columns: 1fr; padding: 1rem; }
+  .welcome-card, .login-card { padding: 2rem 1.5rem; }
+  .welcome-card h1, .login-card h1 { font-size: 1.5rem; }
+  .admin-header { padding: 1rem; }
+  .admin-main { padding: 1rem; }
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+  .stat-card { padding: 1rem; }
+  .stat-card .value { font-size: 1.6rem; }
+  .students-table th, .students-table td { padding: 0.6rem 0.5rem; font-size: 0.82rem; }
+  .slide-actions { flex-direction: column-reverse; align-items: stretch; }
+  .slide-nav { justify-content: stretch; }
+  .slide-nav .btn { flex: 1; }
+}
+
+@media (max-width: 480px) {
+  .topbar .student-chip span:not(.dot) { display: none; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .slide-grid { grid-template-columns: 1fr; }
+  .exam-result .score { font-size: 3.2rem; }
+}
+
+@media print {
+  body::before, .topbar, .slide-actions, .slide-tabs { display: none !important; }
+  .slide { page-break-after: always; box-shadow: none; border: 1px solid #ccc; }
+}
