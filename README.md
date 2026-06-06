@@ -96,7 +96,7 @@ python server.py
 
 Para que los estudiantes accedan desde sus dispositivos, el servidor debe correr en una IP fija de tu red local.
 
-### En Mac (Servidor)
+### En Mac (Servidor) — Método GUI
 1. **Preferencias del Sistema → Red → Wi-Fi (o Ethernet) → Detalles**
 2. **TCP/IP → Configurar IPv4: Manualmente**
 3. Asigna una IP fija fuera del rango DHCP del router, por ejemplo:
@@ -104,6 +104,20 @@ Para que los estudiantes accedan desde sus dispositivos, el servidor debe correr
    - **Máscara de subred:** `255.255.255.0`
    - **Router:** `192.168.1.1` (la puerta de enlace de tu router)
 4. Aplica cambios y reinicia el servidor Americano.
+
+### En Mac (Servidor) — Método terminal (más rápido)
+```bash
+# Configurar IP estática
+sudo networksetup -setmanual "Wi-Fi" 192.168.1.100 255.255.255.0 192.168.1.1
+sudo networksetup -setdnsservers "Wi-Fi" 1.1.1.1 8.8.8.8
+
+# Permitir Python en el firewall
+sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /Users/samuelrm/Documents/Americano/venv/bin/python3
+sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp /Users/samuelrm/Documents/Americano/venv/bin/python3
+
+# Volver a DHCP cuando termines (en casa, etc.)
+sudo networksetup -setdhcp "Wi-Fi"
+```
 
 ### En Windows (Servidor)
 1. **Panel de control → Centro de redes → Conexión activa → Propiedades**
@@ -114,28 +128,31 @@ Para que los estudiantes accedan desde sus dispositivos, el servidor debe correr
    - **Puerta de enlace:** `192.168.1.1` (IP de tu router)
 4. Aceptar y reiniciar el servidor.
 
-### En el firewall (Mac)
-- Al iniciar el servidor por primera vez, macOS preguntará si permites conexiones entrantes de Python. Acepta.
-
-### En el firewall (Windows)
-- Permitir Python en el Firewall de Windows Defender la primera vez.
-
 ### Configurar IP en el proyecto
 Edita `config.json` y actualiza `server.lan_ip` con tu IP fija:
 ```json
 {
   "server": {
     "host": "0.0.0.0",
-    "port": 5000,
+    "port": 8080,
     "lan_ip": "192.168.1.100",
     "debug": false
   }
 }
 ```
 
+### ⚠️ Troubleshooting
+- Si después de cambiar la IP el servidor no responde, **apaga y enciende el Wi-Fi** (o reinicia la Mac). El cambio de IP a veces deja rutas obsoletas en la tabla de routing.
+- Si necesitas internet en la Mac mientras el servidor está corriendo, **conecta por Ethernet** y deja el Wi-Fi en DHCP.
+- Verifica con: `curl http://192.168.1.100:8080/api/health`
+
 ### Acceso desde los estudiantes
-- En el navegador del estudiante: `http://192.168.1.100:5000`
+- En el navegador del estudiante: `http://192.168.1.100:8080`
 - (El estudiante debe estar conectado a la **misma red Wi-Fi/LAN** que el profesor)
+- Si usas Windows como servidor, ajusta la URL con la IP que asignaste.
+
+### ⚠️ Hotspots de celular (NO recomendado para clases)
+Los hotspots de iPhone/Android tienen **aislación de clientes**: los dispositivos conectados no se ven entre sí. Para una clase con varios estudiantes, usa un **router Wi-Fi real**.
 
 ---
 
