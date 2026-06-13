@@ -22,6 +22,25 @@
     </header>
 
     <main class="admin-main">
+      <section class="admin-panel active-grade-panel" id="active-grade-panel">
+        <div class="active-grade-header">
+          <div>
+            <h2>🎯 Grado activo</h2>
+            <p>Es el grado al que los estudiantes llegan al entrar a <code>192.168.1.100:8080</code></p>
+          </div>
+          <div id="active-grade-chip"></div>
+        </div>
+        <div class="active-grade-controls">
+          <select id="active-grade-select" class="active-grade-select"></select>
+          <button class="btn btn-primary" id="activate-grade-btn">✓ Activar este grado</button>
+          <button class="btn btn-ghost" id="deactivate-grade-btn">⏸️ Desactivar</button>
+        </div>
+        <div class="active-grade-hint">
+          <span class="icon">💡</span>
+          <span>Los estudiantes que ya están dentro conservan su grado y su progreso. Solo afecta a quienes entren nuevos.</span>
+        </div>
+      </section>
+
       <section class="stats-grid" id="stats"></section>
 
       <section class="admin-panel">

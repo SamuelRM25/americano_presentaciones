@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ school.name }} · Sin grado activo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+  <style>
+    body { display: grid; place-items: center; min-height: 100vh; padding: 1.5rem; }
+    .no-active-card {
+      max-width: 540px;
+      width: 100%;
+      background: var(--surface, rgba(255,255,255,0.04));
+      border: 1px solid var(--border, rgba(255,255,255,0.10));
+      border-radius: var(--radius-xl, 32px);
+      padding: 3rem 2.5rem;
+      text-align: center;
+      box-shadow: var(--shadow-lg, 0 20px 50px rgba(0,0,0,0.25));
+      animation: pop-in var(--t-bounce, 500ms cubic-bezier(0.34, 1.56, 0.64, 1)) both;
+    }
+    .no-active-card .emoji {
+      font-size: 4.5rem;
+      margin-bottom: 1rem;
+      display: block;
+      animation: float 3s ease-in-out infinite;
+    }
+    .no-active-card h1 {
+      font-size: 1.85rem;
+      font-weight: 800;
+      margin-bottom: 0.6rem;
+      background: var(--grad-primary, linear-gradient(135deg, #7c3aed, #ec4899));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .no-active-card p {
+      color: var(--text-soft, #cbd5e1);
+      margin-bottom: 1.5rem;
+      line-height: 1.7;
+    }
+    .no-active-card .actions {
+      display: flex;
+      gap: 0.6rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .no-active-card .help {
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border, rgba(255,255,255,0.10));
+      font-size: 0.85rem;
+      color: var(--text-mute, #94a3b8);
+    }
+    .no-active-card .grades-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      justify-content: center;
+      margin: 1rem 0 1.5rem;
+    }
+    .no-active-card .grade-pill {
+      padding: 0.3rem 0.7rem;
+      background: var(--surface-2, rgba(255,255,255,0.08));
+      border: 1px solid var(--border, rgba(255,255,255,0.10));
+      border-radius: var(--radius-full, 999px);
+      font-size: 0.82rem;
+      color: var(--text-soft, #cbd5e1);
+    }
+  </style>
+</head>
+<body>
+  <div class="no-active-card">
+    <span class="emoji">🎓</span>
+    <h1>Aún no hay grado activo</h1>
+    <p>El profesor debe seleccionar qué grado se va a trabajar hoy. Los QRs y los enlaces se actualizarán automáticamente.</p>
+    <div class="grades-list">
+      {% for gid, g in grades.items() %}
+        {% if g.ready %}
+          <a href="/grado/{{ gid }}" class="grade-pill">{{ g.label }}</a>
+        {% endif %}
+      {% endfor %}
+    </div>
+    <div class="actions">
+      <a href="/admin" class="btn btn-primary btn-lg">👨‍🏫 Panel del profesor</a>
+    </div>
+    <div class="help">{{ school.name }} · {{ school.teacher }}</div>
+  </div>
+</body>
+</html>

@@ -78,8 +78,12 @@ def load_grade(grade_id):
     path = grade_path(grade_id)
     if not path.exists():
         return {"students": []}
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, Exception) as e:
+        print(f"⚠️ Error cargando {grade_id}.json: {e}. Devolviendo datos vacíos.")
+        return {"students": []}
 
 
 def save_grade(grade_id, data):
@@ -98,21 +102,54 @@ def admin_required(f):
 
 
 GRADES = {
-    "primero_basico": {"label": "Primero Básico", "subject": "TAC (Mecanografía)", "ready": False},
+    "primero_basico": {"label": "Primero Básico", "subject": "TAC (Mecanografía)", "ready": True},
     "segundo_basico": {"label": "Segundo Básico", "subject": "TAC (Mecanografía)", "ready": True},
-    "tercero_basico": {"label": "Tercero Básico", "subject": "TAC", "ready": False},
+    "tercero_basico": {"label": "Tercero Básico", "subject": "TAC (Procesamiento de textos)", "ready": True},
     "cuarto_madurez": {"label": "Cuarto Bachillerato por Madurez", "subject": "TIC", "ready": True},
-    "cuarto_perito": {"label": "Cuarto Perito Contador", "subject": "Computación I", "ready": False},
-    "quinto_perito": {"label": "Quinto Perito Contador", "subject": "Computación II", "ready": False},
+    "cuarto_perito": {"label": "Cuarto Perito Contador", "subject": "Computación (Excel - Funciones avanzadas)", "ready": True},
+    "quinto_perito": {"label": "Quinto Perito Contador", "subject": "Computación II (Tablas dinámicas, Dashboards)", "ready": True},
     "sexto_pc": {"label": "Sexto Perito Contador", "subject": "Computación III (Funciones avanzadas de Excel)", "ready": True},
-    "cuarto_secretariado": {"label": "Cuarto Secretariado", "subject": "Computación I", "ready": False},
-    "quinto_bachillerato": {"label": "Quinto Bachillerato en Computación", "subject": "Computación II", "ready": False},
+    "cuarto_secretariado": {"label": "Cuarto Secretariado", "subject": "Computación I (Archivos, OCR, Correo, Agenda)", "ready": True},
+    "quinto_bachillerato": {"label": "Quinto Bachillerato en Computación", "subject": "Computación II (Programación Web: HTML, CSS, JS)", "ready": True},
 }
 
 
 @app.route("/")
 def index():
-    return render_template("index.html", grades=GRADES, school=load_config()["school"])
+    cfg = load_config()
+    active = cfg.get("ui", {}).get("active_grade")
+    if active and active in GRADES and GRADES[active]["ready"]:
+        return redirect(f"/grado/{active}")
+    return render_template("landing_no_active.html", grades=GRADES, school=cfg["school"])
+
+
+@app.route("/api/active-grade", methods=["GET"])
+def api_active_grade():
+    cfg = load_config()
+    active = cfg.get("ui", {}).get("active_grade")
+    if active and active in GRADES and GRADES[active]["ready"]:
+        return jsonify({
+            "active_grade": active,
+            "label": GRADES[active]["label"],
+            "subject": GRADES[active]["subject"],
+            "url": f"/grado/{active}",
+        })
+    return jsonify({"active_grade": None})
+
+
+@app.route("/api/admin/active-grade", methods=["POST"])
+@admin_required
+def set_active_grade():
+    data = request.get_json() or {}
+    new_active = (data.get("grade_id") or "").strip() or None
+    if new_active and new_active not in GRADES:
+        return jsonify({"error": "grado inválido"}), 400
+    cfg = load_config()
+    if "ui" not in cfg:
+        cfg["ui"] = {}
+    cfg["ui"]["active_grade"] = new_active
+    save_config(cfg)
+    return jsonify({"ok": True, "active_grade": new_active})
 
 
 @app.route("/grado/<grade_id>")
@@ -161,12 +198,16 @@ def api_links():
     """Devuelve un JSON con todos los links disponibles. Útil para el script de terminal."""
     cfg = load_config()
     base = cfg.get("server", {}).get("lan_ip", "192.168.1.100")
+    active = cfg.get("ui", {}).get("active_grade")
     out = {
         "server_ip": base,
         "server_port": cfg.get("server", {}).get("port", 8080),
         "admin_url": f"http://{base}/admin",
         "qr_cards_url": f"http://{base}/qr-cards",
         "qr_cards_print": f"http://{base}/qr-cards?print=1",
+        "root_url": f"http://{base}/",
+        "active_grade": active,
+        "active_label": GRADES[active]["label"] if active and active in GRADES else None,
         "grades": {},
     }
     for gid, g in GRADES.items():

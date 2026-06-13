@@ -31,9 +31,23 @@ done
 
 # Verificar que el servidor responde
 if ! curl -s --max-time 3 "$API_URL" > /dev/null; then
-  echo "❌ El servidor no responde en $API_URL"
-  echo "   Asegúrate de que esté corriendo (doble clic en scripts/start_mac.command)"
-  exit 1
+  CURRENT_IP=$(ipconfig getifaddr en0 2>/dev/null)
+  if [ -n "$CURRENT_IP" ] && [ "$CURRENT_IP" != "$LAN_IP" ]; then
+    echo "⚠️  IP estática ($LAN_IP) no responde. IP actual: $CURRENT_IP"
+    if curl -s --max-time 3 "http://${CURRENT_IP}:${PORT}/api/links" > /dev/null; then
+      echo "    Usando la IP actual en su lugar."
+      LAN_IP="$CURRENT_IP"
+      API_URL="http://${LAN_IP}:${PORT}/api/links"
+    else
+      echo "❌ El servidor no responde en $API_URL ni en $CURRENT_IP"
+      echo "   Asegúrate de que esté corriendo (doble clic en scripts/start_mac.command)"
+      exit 1
+    fi
+  else
+    echo "❌ El servidor no responde en $API_URL"
+    echo "   Asegúrate de que esté corriendo (doble clic en scripts/start_mac.command)"
+    exit 1
+  fi
 fi
 
 # Si pidió copiar
@@ -68,6 +82,14 @@ echo "║  👨‍🏫 Admin:   http://$LAN_IP/admin        "
 echo "║  🖨️  QRs:     http://$LAN_IP/qr-cards  "
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
+
+ACTIVE=$(curl -s "$API_URL" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('active_label') or '')")
+if [ -n "$ACTIVE" ]; then
+  echo "🎯 HOY VEMOS: $ACTIVE"
+  echo "   → Los estudiantes al entrar a http://$LAN_IP van directo a este grado"
+  echo ""
+fi
+
 echo "📚 GRADOS DISPONIBLES:"
 echo ""
 
@@ -76,10 +98,11 @@ import json, sys
 data = json.load(sys.stdin)
 for gid, g in data['grades'].items():
     if g.get('ready') and g.get('url'):
-        print(f\"  🎯 {g['label']}\")
-        print(f\"     Materia:  {g['subject']}\")
-        print(f\"     Enlace:   {g['url']}\")
-        print(f\"     QR:       {g['qr_url']}\")
+        marker = '  ⭐ ' if (g.get('label') == data.get('active_label')) else '  🎯 '
+        print(f'{marker}{g[\"label\"]}')
+        print(f'     Materia:  {g[\"subject\"]}')
+        print(f'     Enlace:   {g[\"url\"]}')
+        print(f'     QR:       {g[\"qr_url\"]}')
         print()
 "
 

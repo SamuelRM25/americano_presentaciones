@@ -3,6 +3,7 @@
     selectedGrade: 'all',
     data: null,
     selectedStudent: null,
+    activeGrade: null,
   };
 
   function fmtDate(iso) {
@@ -279,12 +280,14 @@
     renderStats();
     renderGradeSelector();
     renderStudents();
+    renderActiveGrade();
   }
 
   async function loadConfig() {
     const res = await API.adminConfigGet();
     if (!res.ok) return;
     const cfg = res.data;
+    state.activeGrade = cfg.ui?.active_grade || null;
     document.getElementById('cfg-password').value = cfg.admin?.password || '';
     document.getElementById('cfg-form-url').value = cfg.google_forms?.form_url || '';
     document.getElementById('cfg-enabled').value = String(cfg.google_forms?.enabled || false);
@@ -296,6 +299,24 @@
     document.getElementById('cfg-f-tipo').value = f.tipo || '';
     document.getElementById('cfg-f-contenido').value = f.contenido || '';
     document.getElementById('cfg-f-calificacion').value = f.calificacion || '';
+    renderActiveGrade();
+  }
+
+  function renderActiveGrade() {
+    const sel = document.getElementById('active-grade-select');
+    const chip = document.getElementById('active-grade-chip');
+    if (!sel) return;
+    const current = state.activeGrade || '';
+    sel.innerHTML = '<option value="">— Ninguno (mostrar mensaje) —</option>' +
+      Object.entries(GRADES)
+        .filter(([_, g]) => g.ready)
+        .map(([gid, g]) => `<option value="${gid}" ${gid === current ? 'selected' : ''}>${escapeHTML(g.label)} · ${escapeHTML(g.subject)}</option>`)
+        .join('');
+    if (current && GRADES[current]) {
+      chip.innerHTML = `<span class="active-pill"><span class="dot"></span> Activo: <strong>${escapeHTML(GRADES[current].label)}</strong></span>`;
+    } else {
+      chip.innerHTML = `<span class="inactive-pill">⏸️ Sin grado activo</span>`;
+    }
   }
 
   function attachHandlers() {
@@ -303,6 +324,31 @@
     document.getElementById('logout-btn').addEventListener('click', async () => {
       await API.adminLogout();
       location.href = '/admin';
+    });
+
+    document.getElementById('activate-grade-btn').addEventListener('click', async () => {
+      const sel = document.getElementById('active-grade-select');
+      const gid = sel.value;
+      if (!gid) { Toast.show('Selecciona un grado', 'warn'); return; }
+      const res = await API.adminSetActiveGrade(gid);
+      if (res.ok) {
+        state.activeGrade = gid;
+        renderActiveGrade();
+        Toast.show('✅ Grado activado: ' + GRADES[gid].label, 'success');
+      } else {
+        Toast.show('Error: ' + (res.error || ''), 'error');
+      }
+    });
+
+    document.getElementById('deactivate-grade-btn').addEventListener('click', async () => {
+      const res = await API.adminSetActiveGrade(null);
+      if (res.ok) {
+        state.activeGrade = null;
+        renderActiveGrade();
+        Toast.show('⏸️ Grado desactivado', 'info');
+      } else {
+        Toast.show('Error: ' + (res.error || ''), 'error');
+      }
     });
 
     document.getElementById('config-form').addEventListener('submit', async (e) => {

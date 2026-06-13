@@ -30,6 +30,7 @@ const API = (() => {
     adminData: (grade) => request(`/api/admin/data${grade ? '?grade=' + grade : ''}`),
     adminConfig: (cfg) => request('/api/admin/config', { method: 'POST', body: cfg }),
     adminConfigGet: () => request('/api/admin/config'),
+    adminSetActiveGrade: (gradeId) => request('/api/admin/active-grade', { method: 'POST', body: { grade_id: gradeId } }),
     exportGoogleForms: (records) => request('/api/export/google-forms', { method: 'POST', body: { records } }),
   };
 })();

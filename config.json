@@ -9,6 +9,10 @@
     "password": "Samprs258",
     "session_secret": "americano-secret-change-me-in-production"
   },
+  "ui": {
+    "active_grade": "cuarto_perito",
+    "redirect_mode": "active_grade"
+  },
   "google_forms": {
     "enabled": false,
     "form_url": "",
